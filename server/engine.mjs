@@ -325,8 +325,9 @@ function fitButtons(reply, cfg, answer, message = "") {
   for (const s of spoken) if (!named.some((n) => n.href === s.href && n.label === s.label)) named.push(s);
   const isNamed = (a) => named.some((n) => n.href === a.href);
   const overlap = (a) => (a.label.toLowerCase().match(/[a-z0-9]+/g) ?? []).map(lstem).filter((w) => words.has(w)).length;
-  if (actions.some((a) => a.kind === "link" && overlap(a) > 0))
-    actions = actions.filter((a) => a.kind !== "link" || overlap(a) > 0 || isNamed(a));
+  // A lone unrelated link must be removed too. Previously filtering only ran when at least one
+  // link overlapped the answer, which let a single press/article button appear under every reply.
+  actions = actions.filter((a) => a.kind !== "link" || overlap(a) > 0 || isNamed(a));
   actions.sort((a, b) => overlap(b) - overlap(a));
   actions = [...named.filter((n) => !actions.some((a) => a.href === n.href)), ...actions];
   const rank = (a) => { const i = named.findIndex((n) => n.href === a.href); return i < 0 ? 99 : i; };
@@ -406,7 +407,7 @@ ${message}
   }
   if (r.outcome === "no_match" && feat?.actions.length)
     return { ...feat, notes: [...feat.notes, ...r.notes] };
-  return withButtons(r, feat);
+  return fitButtons(withButtons(r, feat), cfg, r.text, message);
 }
 var GENERAL_RULES = `GENERAL QUESTIONS: If the sources don't answer and the visitor asks a general question that is NOT about this business's own details (for example what a common service or term means), you may answer briefly from general knowledge. Start that reply with "GENERAL:" and use no source ids. Never state this business's prices, hours, phone numbers, emails, address, staff, insurance, availability, policies or links in a GENERAL reply — for those, reply exactly: NO_ANSWER
 `;
